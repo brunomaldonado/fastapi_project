@@ -36,6 +36,7 @@ async def get_customer(customer_id: int, session: SessionDep):
 
   return response
 
+
 # delete endpoint by id get customer
 @router.delete("/customers/{customer_id}", tags=["Customers"])
 async def delete_customer(customer_id: int, session: SessionDep):

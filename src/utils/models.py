@@ -71,7 +71,7 @@ class Invoice(BaseModel):
   total: int
 
   @property
-  def amount_total(self):
+  def ammount_total(self):
     return sum(transaction.ammount for transaction in self.transactions)
 
 
