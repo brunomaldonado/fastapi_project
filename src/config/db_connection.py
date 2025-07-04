@@ -1,7 +1,6 @@
 from sqlmodel import SQLModel, Session, create_engine
 from typing import Annotated
-from fastapi import Depends
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from pathlib import Path
 base_dir = Path(__file__).resolve().parent.parent

@@ -5,7 +5,7 @@ from config.db_connection import engine
 from utils.models import Customer, Transaction
 
 session = Session(engine)
-customer = Customer(name="John Doe", email="doe.icloud.com", age=30, description="Test customer")
+customer = Customer(name="John Doe", email="doe@icloud.com", age=30, description="Test customer")
 session.add(customer)
 session.commit()
 
@@ -14,3 +14,6 @@ for x in range(100):
 session.commit()
 
 
+# chargerit wireless desk charger (CHARGit)
+# DELL ULTRASHARP CURVED MONITOR (U3821DW)
+# FLEXISPOT E7Q ELECTRIC STANDING DESK FRAME (E7Q)

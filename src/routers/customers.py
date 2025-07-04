@@ -1,5 +1,5 @@
 from fastapi.params import Query
-from utils.models import Customer, CustomerCreate, CustomerPlan, CustomerUpdate, Plan, StatusEnum
+from utils.models import Customer, CustomerCreate, CustomerPlan, CustomerUpdate, Plan, StatusEnum, Transaction
 from config.db_connection import SessionDep, engine
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
@@ -41,10 +41,13 @@ async def get_customer(customer_id: int, session: SessionDep):
 @router.delete("/customers/{customer_id}", tags=["Customers"])
 async def delete_customer(customer_id: int, session: SessionDep):
   try:
-    response = session.exec(select(Customer).where(Customer.id == customer_id)).one() # .one() will raise an error if no record is found
-    if response is None:
+    customer = session.exec(select(Customer).where(Customer.id == customer_id)).one() # .one() will raise an error if no record is found
+    transactions = session.exec(select(CustomerPlan).where(Transaction.customer_id == customer_id)).all()
+    if transactions:
+      raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete customer with existing transactions!")
+    if customer is None:
       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer doesn't exist!!")
-    session.delete(response)
+    session.delete(customer)
     session.commit()
   except Exception as e:
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -54,20 +57,20 @@ async def delete_customer(customer_id: int, session: SessionDep):
 # @router.put("/customers/{id}", response_model=Customer) # put is used to update a resource completely
 # async def update_customer(customer_id: int, customer_data: CustomerUpdate, session: SessionDep):
 #   try:
-#     response = session.exec(select(Customer).where(Customer.id == customer_id)).one() # .one() will raise an error if no record is found
-#     if response is None:
+#     customer = session.exec(select(Customer).where(Customer.id == customer_id)).one() # .one() will raise an error if no record is found
+#     if customer is None:
 #       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found!")
 
 #     for key, value in customer_data.model_dump().items():
-#       setattr(response, key, value)
+#       setattr(customer, key, value)
 
-#     session.add(response)
+#     session.add(customer)
 #     session.commit()
-#     session.refresh(response)
+#     session.refresh(customer)
 #   except Exception as e:
 #     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-#   return response
+#   return customer
 
 @router.patch("/customers/{customer_id}", response_model=Customer, status_code=status.HTTP_201_CREATED, tags=["Customers"]) # patch is used to update a resource partially
 async def partial_update_customer(customer_id: int, customer_data: CustomerUpdate, session: SessionDep):

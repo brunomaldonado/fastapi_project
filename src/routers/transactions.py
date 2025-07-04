@@ -1,7 +1,7 @@
 from sqlmodel import select
 from config.db_connection import SessionDep
-from utils.models import Customer, Transaction, TransactionCreate
-from fastapi import APIRouter, HTTPException, status
+from utils.models import Customer, PaginatedTransactions, Transaction, TransactionCreate
+from fastapi import APIRouter, HTTPException, Query, status
 
 router = APIRouter()
 
@@ -19,7 +19,35 @@ async def create_transaction(transaction_data: TransactionCreate, session: Sessi
 
   return transaction_db
 
-@router.get("/transactions", response_model=list[Transaction], tags=["Transactions"])
-async def list_transactions(session: SessionDep):
-  transaction = session.exec(select(Transaction)).all()
-  return transaction  # Placeholder for listing transactions, to be implemented later
+# challange 1: List transactions
+# This endpoint will list all transactions, but we can add filtering and pagination later.
+# obtner la cantidad total de paginas, cuantos elementos esta mos mostrando en esa pagina, etc.
+
+@router.get("/transactions", response_model=PaginatedTransactions, tags=["Transactions"])
+async def list_transactions(session: SessionDep, customer_id: int = Query(..., description="Customer ID"), skip: int = Query(0, description="Skip register"), limit: int = Query(4, description="Limit register")):
+  customer = session.get(Customer, customer_id)
+  if not customer:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found!")
+
+  total_transactions = session.exec(select(Transaction).where(Transaction.customer_id == customer_id)).all()  # Get all transactions for the customer
+  total_count = len(total_transactions)  # Get the total number of transactions for the customer
+  query = select(Transaction).where(Transaction.customer_id == customer_id).offset(skip).limit(limit)
+
+  transactions = session.exec(query).all()
+
+  if not transactions:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No transactions found!")
+
+  total_pages = (total_count + limit - 1) // limit  # Calculate total pages
+  current_page = (skip // limit) + 1
+
+  response = PaginatedTransactions(
+  per_page=limit,
+  total_pages=total_pages,
+  current_page=current_page,
+  customer_id=customer_id,
+  transactions=transactions,
+  )
+
+  return response
+
